@@ -1,3 +1,5 @@
+[![Rust](https://github.com/tcallan/file_task/actions/workflows/rust.yml/badge.svg)](https://github.com/tcallan/file_task/actions/workflows/rust.yml)
+
 # TODO and feature ideas
 * document what this is
 * more filesystem tests
