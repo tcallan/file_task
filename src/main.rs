@@ -25,7 +25,6 @@ use tui::{
 use service::ServiceDetails;
 
 const DELETED_RETENTION: Duration = Duration::from_secs(60 * 60 * 24); // one day
-const WATCH_DEBOUNCE: Duration = Duration::from_secs(5);
 const INPUT_POLL: Duration = Duration::from_secs(5);
 
 #[derive(Parser, Debug)]

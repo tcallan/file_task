@@ -6,9 +6,9 @@ use std::path::{Path, PathBuf};
 
 use itertools::Itertools;
 use notify::event::{ModifyKind, RenameMode};
-use notify::{Config, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::{EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 
-use crate::{DELETED_RETENTION, WATCH_DEBOUNCE};
+use crate::DELETED_RETENTION;
 
 #[derive(Debug, PartialEq)]
 pub struct FileItem {
@@ -134,7 +134,6 @@ pub fn init_file_watch(
         Ok(event) => handle_event(&tx, event),
         Err(e) => println!("watch error: {:?}", e),
     })?;
-    watcher.configure(Config::OngoingEvents(Some(WATCH_DEBOUNCE)))?;
 
     for path in paths.iter() {
         watcher.watch(&path.root, RecursiveMode::NonRecursive)?;
