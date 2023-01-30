@@ -10,7 +10,7 @@ description = "Monitor the status of tasks represented by files in folders"
 [dependencies]
 notify = "5.0.0"
 tui = "0.19"
-crossterm = "0.25"
+crossterm = "0.26"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 itertools = "0.10"
 clap = { version = "4.1.4", features = ["derive"] }
