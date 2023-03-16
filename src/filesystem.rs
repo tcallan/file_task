@@ -99,9 +99,31 @@ pub fn update_file_items(rx: &Receiver<FileChange>, file_items: &mut Vec<FileGro
                 }
             }
             FileChange::Moved(from, to) => {
-                for group in find_groups(from, file_items) {
-                    if let Some(existing) = group.items.iter_mut().find(|f| f.path == *from) {
-                        existing.path = to.to_path_buf();
+                if from.parent() == to.parent() {
+                    // rename in same monitored group
+                    for group in find_groups(from, file_items) {
+                        if let Some(existing) = group.items.iter_mut().find(|f| f.path == *from) {
+                            existing.path = to.to_path_buf();
+                        }
+                    }
+                } else {
+                    // was it moved to another tracked group?
+                    let mut moved = false;
+
+                    for group in find_groups(to, file_items) {
+                        moved = true;
+                        group.items.push(FileItem::new(to.to_path_buf()));
+                    }
+
+                    // if it was moved to another tracked group immediately remove it from the old one
+                    // by abusing the standard cleanup; otherwise (i.e. it was moved out of tracking
+                    // entirely) treat it as a normal deletion
+                    let removed = if moved { now - DELETED_RETENTION } else { now };
+
+                    for group in find_groups(from, file_items) {
+                        if let Some(existing) = group.items.iter_mut().find(|f| f.path == *from) {
+                            existing.removed = Some(removed);
+                        }
                     }
                 }
             }
@@ -158,6 +180,10 @@ fn handle_event(tx: &Sender<FileChange>, event: notify::Event) {
             .iter()
             .next_tuple()
             .map(|(from, to)| tx.send(FileChange::Moved(from.to_owned(), to.to_owned()))),
+        EventKind::Modify(ModifyKind::Name(RenameMode::From)) => event
+            .paths
+            .first()
+            .map(|f| tx.send(FileChange::Removed(f.to_owned()))),
         _ => None,
     };
 }
@@ -504,5 +530,96 @@ mod tests {
         ];
         assert_equal(&paths[0].items, &expected_items);
         assert_equal(&paths[1].items, &expected_items);
+    }
+
+    #[test]
+    fn update_file_items_move_out() {
+        let (tx, rx) = channel();
+        let mut paths = vec![FileGroup {
+            root: PathBuf::from("/root"),
+            items: vec![
+                FileItem::new(PathBuf::from("/root/bar")),
+                FileItem::new(PathBuf::from("/root/foo")),
+            ],
+        }];
+
+        tx.send(FileChange::Moved(
+            PathBuf::from("/root/bar"),
+            PathBuf::from("/other/new"),
+        ))
+        .unwrap();
+
+        update_file_items(&rx, &mut paths);
+
+        assert_eq!(paths.len(), 1);
+        let items = &paths[0].items;
+        assert_eq!(items.len(), 2);
+        assert_eq!(items[0].path, PathBuf::from("/root/bar"));
+        assert!(items[0].removed.is_some());
+        assert_eq!(items[1].path, PathBuf::from("/root/foo"));
+        assert!(items[1].removed.is_none());
+    }
+
+    #[test]
+    fn update_file_items_move_in() {
+        let (tx, rx) = channel();
+        let mut paths = vec![FileGroup {
+            root: PathBuf::from("/root"),
+            items: vec![FileItem::new(PathBuf::from("/root/bar"))],
+        }];
+
+        tx.send(FileChange::Moved(
+            PathBuf::from("/other/new"),
+            PathBuf::from("/root/foo"),
+        ))
+        .unwrap();
+
+        update_file_items(&rx, &mut paths);
+
+        assert_eq!(paths.len(), 1);
+        let expected_items = vec![
+            FileItem::new(PathBuf::from("/root/bar")),
+            FileItem::new(PathBuf::from("/root/foo")),
+        ];
+        assert_eq!(&paths[0].items, &expected_items);
+    }
+
+    #[test]
+    fn update_file_items_move_between() {
+        let (tx, rx) = channel();
+        let mut paths = vec![
+            FileGroup {
+                root: PathBuf::from("/root"),
+                items: vec![
+                    FileItem::new(PathBuf::from("/root/bar")),
+                    FileItem::new(PathBuf::from("/root/move")),
+                ],
+            },
+            FileGroup {
+                root: PathBuf::from("/other"),
+                items: vec![FileItem::new(PathBuf::from("/other/foo"))],
+            },
+        ];
+
+        tx.send(FileChange::Moved(
+            PathBuf::from("/root/move"),
+            PathBuf::from("/other/move"),
+        ))
+        .unwrap();
+
+        update_file_items(&rx, &mut paths);
+
+        assert_eq!(paths.len(), 2);
+
+        assert_eq!(paths[0].items.len(), 1);
+        let items = &paths[0].items;
+        assert_eq!(items[0].path, PathBuf::from("/root/bar"));
+        assert!(items[0].removed.is_none());
+
+        let expected_items_2 = vec![
+            FileItem::new(PathBuf::from("/other/foo")),
+            FileItem::new(PathBuf::from("/other/move")),
+        ];
+        assert_eq!(&paths[1].items, &expected_items_2);
     }
 }
