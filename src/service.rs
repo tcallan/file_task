@@ -1,6 +1,6 @@
 use std::process::{Command, Output};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ServiceState {
     Unknown(String),
     Details(ServiceDetails),
@@ -31,7 +31,7 @@ impl ServiceState {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ServiceDetails {
     name: String,
     pub active: bool,

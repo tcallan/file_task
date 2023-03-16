@@ -10,7 +10,7 @@ use notify::{EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 
 use crate::DELETED_RETENTION;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct FileItem {
     pub path: PathBuf,
     pub removed: Option<Instant>,
@@ -25,7 +25,7 @@ impl FileItem {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct FileGroup {
     pub root: PathBuf,
     pub items: Vec<FileItem>,
@@ -41,7 +41,7 @@ impl FileGroup {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum FileChange {
     Added(PathBuf),
     Removed(PathBuf),
@@ -141,7 +141,7 @@ pub fn update_file_items(rx: &Receiver<FileChange>, file_items: &mut Vec<FileGro
 
 fn find_groups<'a>(
     path: &'a Path,
-    file_items: &'a mut Vec<FileGroup>,
+    file_items: &'a mut [FileGroup],
 ) -> impl Iterator<Item = &'a mut FileGroup> + 'a {
     file_items
         .iter_mut()
