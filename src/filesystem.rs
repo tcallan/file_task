@@ -104,6 +104,9 @@ pub fn update_file_items(rx: &Receiver<FileChange>, file_items: &mut Vec<FileGro
                     for group in find_groups(from, file_items) {
                         if let Some(existing) = group.items.iter_mut().find(|f| f.path == *from) {
                             existing.path = to.to_path_buf();
+                            // we might have already handled the "move from" part of this as a
+                            // "remove", so fix up the removed state just in case
+                            existing.removed = None;
                         }
                     }
                 } else {
