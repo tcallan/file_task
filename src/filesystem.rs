@@ -1,5 +1,5 @@
 use std::sync::mpsc::{Receiver, Sender};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use std::{fs, io};
 
 use std::path::{Path, PathBuf};
@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use itertools::Itertools;
 use notify::event::{ModifyKind, RenameMode};
 use notify::{EventKind, RecommendedWatcher, RecursiveMode, Watcher};
+use notify_debouncer_full::{new_debouncer, Debouncer, FileIdMap};
 
 use crate::DELETED_RETENTION;
 
@@ -154,17 +155,25 @@ fn find_groups<'a>(
 pub fn init_file_watch(
     tx: Sender<FileChange>,
     paths: &[FileGroup],
-) -> Result<RecommendedWatcher, Box<dyn std::error::Error>> {
-    let mut watcher = notify::recommended_watcher(move |res| match res {
-        Ok(event) => handle_event(&tx, event),
+) -> Result<Debouncer<RecommendedWatcher, FileIdMap>, Box<dyn std::error::Error>> {
+    let mut debouncer = new_debouncer(Duration::from_secs(2), None, move |res| match res {
+        Ok(events) => handle_events(&tx, events),
         Err(e) => println!("watch error: {:?}", e),
     })?;
 
     for path in paths.iter() {
-        watcher.watch(&path.root, RecursiveMode::NonRecursive)?;
+        debouncer
+            .watcher()
+            .watch(&path.root, RecursiveMode::NonRecursive)?;
     }
 
-    Ok(watcher)
+    Ok(debouncer)
+}
+
+fn handle_events(tx: &Sender<FileChange>, events: Vec<notify::Event>) {
+    for event in events {
+        handle_event(tx, event);
+    }
 }
 
 fn handle_event(tx: &Sender<FileChange>, event: notify::Event) {
@@ -186,7 +195,13 @@ fn handle_event(tx: &Sender<FileChange>, event: notify::Event) {
         EventKind::Modify(ModifyKind::Name(RenameMode::From)) => event
             .paths
             .first()
+            // RenameMode::From means moved out of tracking; treat as a delete
             .map(|f| tx.send(FileChange::Removed(f.to_owned()))),
+        EventKind::Modify(ModifyKind::Name(RenameMode::To)) => event
+            .paths
+            .first()
+            // RenameMode::To means moved in to tracking; treat as a create
+            .map(|f| tx.send(FileChange::Added(f.to_owned()))),
         _ => None,
     };
 }
