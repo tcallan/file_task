@@ -556,9 +556,9 @@ dependencies = [
 
 [[package]]
 name = "notify-debouncer-full"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4812c1eb49be776fb8df4961623bdc01ec9dfdc1abe8211ceb09150a2e64219"
+checksum = "416969970ec751a5d702a88c6cd19ac1332abe997fce43f96db0418550426241"
 dependencies = [
  "crossbeam-channel",
  "file-id",
