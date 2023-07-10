@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use itertools::Itertools;
 use notify::event::{ModifyKind, RenameMode};
 use notify::{EventKind, RecommendedWatcher, RecursiveMode, Watcher};
-use notify_debouncer_full::{new_debouncer, Debouncer, FileIdMap};
+use notify_debouncer_full::{new_debouncer, DebouncedEvent, Debouncer, FileIdMap};
 
 use crate::DELETED_RETENTION;
 
@@ -170,9 +170,9 @@ pub fn init_file_watch(
     Ok(debouncer)
 }
 
-fn handle_events(tx: &Sender<FileChange>, events: Vec<notify::Event>) {
-    for event in events {
-        handle_event(tx, event);
+fn handle_events(tx: &Sender<FileChange>, events: Vec<DebouncedEvent>) {
+    for dbe in events {
+        handle_event(tx, dbe.event);
     }
 }
 
