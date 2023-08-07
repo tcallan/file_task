@@ -3,7 +3,7 @@ mod service;
 mod terminal;
 
 use std::{
-    path::{PathBuf, Path},
+    path::{Path, PathBuf},
     sync::mpsc::{channel, Receiver},
     time::Duration,
 };
@@ -11,13 +11,13 @@ use std::{
 use chrono::Local;
 use clap::Parser;
 
-use filesystem::{FileGroup, update_file_items, get_initial_state};
+use filesystem::{get_initial_state, update_file_items, FileGroup};
 use service::{update_service_status, ServiceState};
 use tui::{
     backend::Backend,
     layout::{Constraint, Layout},
     style::{Color, Modifier, Style},
-    text::{Span, Spans},
+    text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph},
     Frame, Terminal,
 };
@@ -136,7 +136,7 @@ fn ui<B: Backend>(frame: &mut Frame<B>, state: &AppState) {
 
     let time = draw_time();
     let service_status = draw_service_status(state);
-    let content = Spans::from(time.into_iter().chain(service_status).collect::<Vec<_>>());
+    let content = Line::from(time.into_iter().chain(service_status).collect::<Vec<_>>());
 
     let bar = Paragraph::new(content).style(Style::default().bg(Color::Blue));
 
