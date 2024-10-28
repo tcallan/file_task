@@ -6,8 +6,8 @@ use std::path::{Path, PathBuf};
 
 use itertools::Itertools;
 use notify::event::{ModifyKind, RenameMode};
-use notify::{EventKind, RecommendedWatcher, RecursiveMode, Watcher};
-use notify_debouncer_full::{new_debouncer, DebouncedEvent, Debouncer, FileIdMap};
+use notify::{EventKind, RecommendedWatcher, RecursiveMode};
+use notify_debouncer_full::{new_debouncer, DebouncedEvent, Debouncer, NoCache};
 
 use crate::DELETED_RETENTION;
 
@@ -155,7 +155,7 @@ fn find_groups<'a>(
 pub fn init_file_watch(
     tx: Sender<FileChange>,
     paths: &[FileGroup],
-) -> Result<Debouncer<RecommendedWatcher, FileIdMap>, Box<dyn std::error::Error>> {
+) -> Result<Debouncer<RecommendedWatcher, NoCache>, Box<dyn std::error::Error>> {
     let mut debouncer = new_debouncer(Duration::from_secs(2), None, move |res| match res {
         Ok(events) => handle_events(&tx, events),
         Err(e) => println!("watch error: {:?}", e),
@@ -163,7 +163,6 @@ pub fn init_file_watch(
 
     for path in paths.iter() {
         debouncer
-            .watcher()
             .watch(&path.root, RecursiveMode::NonRecursive)?;
     }
 
