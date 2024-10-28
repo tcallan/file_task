@@ -8,10 +8,10 @@ description = "Monitor the status of tasks represented by files in folders"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-notify = "6.1.1"
+notify = "7.0.0"
 tui = { package = "ratatui", version = "0.22.0", features = ["all-widgets"]}
 crossterm = "0.28"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 itertools = "0.13"
 clap = { version = "4.5.20", features = ["derive"] }
-notify-debouncer-full = "0.3.2"
+notify-debouncer-full = "0.4.0"
