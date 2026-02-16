@@ -10,8 +10,8 @@ description = "Monitor the status of tasks represented by files in folders"
 [dependencies]
 notify = "8.2.0"
 tui = { package = "ratatui", version = "0.22.0", features = ["all-widgets"]}
-crossterm = "0.28"
+crossterm = "0.29"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 itertools = "0.14"
-clap = { version = "4.5.57", features = ["derive"] }
+clap = { version = "4.5.58", features = ["derive"] }
 notify-debouncer-full = "0.7.0"
